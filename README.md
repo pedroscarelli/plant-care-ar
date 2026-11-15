@@ -36,14 +36,14 @@ Model classes: `folha_saudavel`, `folha_amarelada`, `mancha_fungica`, `oidio`, `
 
 | ID | The user... | Screen |
 |----|-------------|--------|
-| [RF01](https://github.com/pedroscarelli/cuidAR/issues/1) | opens the app, allows camera access and sees the live image with the detected planes | 1, 2 |
-| [RF02](https://github.com/pedroscarelli/cuidAR/issues/2) | points at the plant and sees each leaf marked with the problem found or as healthy | 2, 3 |
-| [RF03](https://github.com/pedroscarelli/cuidAR/issues/3) | sees a pop-up with a suggested diagnosis, treatment steps and a safety warning | 4 |
-| [RF04](https://github.com/pedroscarelli/cuidAR/issues/4) | sees the treatment panel anchored in the real world, next to the pot and linked to the diseased leaf | 6 |
-| [RF05](https://github.com/pedroscarelli/cuidAR/issues/5) | gets "No problem found" when the plant is healthy | 5 |
-| [RF06](https://github.com/pedroscarelli/cuidAR/issues/6) | closes the pop-up and scans again | 4 |
-| [RF07](https://github.com/pedroscarelli/cuidAR/issues/7) | taps a leaf to see the treatment for that problem, when there is more than one | 3 |
-| [RF08](https://github.com/pedroscarelli/cuidAR/issues/8) | uses a printed image marker to trigger the same pop-up (demo mode / plan B) | scenario |
+| [RF01](https://github.com/pedroscarelli/plant-care-ar/issues/1) | opens the app, allows camera access and sees the live image with the detected planes | 1, 2 |
+| [RF02](https://github.com/pedroscarelli/plant-care-ar/issues/2) | points at the plant and sees each leaf marked with the problem found or as healthy | 2, 3 |
+| [RF03](https://github.com/pedroscarelli/plant-care-ar/issues/3) | sees a pop-up with a suggested diagnosis, treatment steps and a safety warning | 4 |
+| [RF04](https://github.com/pedroscarelli/plant-care-ar/issues/4) | sees the treatment panel anchored in the real world, next to the pot and linked to the diseased leaf | 6 |
+| [RF05](https://github.com/pedroscarelli/plant-care-ar/issues/5) | gets "No problem found" when the plant is healthy | 5 |
+| [RF06](https://github.com/pedroscarelli/plant-care-ar/issues/6) | closes the pop-up and scans again | 4 |
+| [RF07](https://github.com/pedroscarelli/plant-care-ar/issues/7) | taps a leaf to see the treatment for that problem, when there is more than one | 3 |
+| [RF08](https://github.com/pedroscarelli/plant-care-ar/issues/8) | uses a printed image marker to trigger the same pop-up (demo mode / plan B) | scenario |
 
 ## Screen prototypes
 
