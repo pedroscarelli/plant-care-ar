@@ -1,0 +1,4 @@
+folha_saudavel
+folha_amarelada
+mancha_fungica
+oidio

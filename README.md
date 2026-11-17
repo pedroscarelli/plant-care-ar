@@ -30,7 +30,7 @@ camera (AR Foundation) → YOLO model (Inference Engine) → stabilizer (3 conse
                        → treatment table (ScriptableObject) → interface (pop-up / AR panel)
 ```
 
-Model classes: `folha_saudavel`, `folha_amarelada`, `mancha_fungica`, `oidio`, `praga` (healthy leaf, yellowing leaf, fungal spot, powdery mildew, pest).
+Model classes: `folha_saudavel`, `folha_amarelada`, `mancha_fungica`, `oidio` (healthy leaf, yellowing leaf, fungal spot, powdery mildew). `praga` (pest) is planned, but the current dataset has too few pest examples, so the first model does not include it.
 
 ## Functional requirements
 
@@ -55,10 +55,10 @@ Model classes: `folha_saudavel`, `folha_amarelada`, `mancha_fungica`, `oidio`, `
 
 ## Technologies
 
-- **Unity 6000.3.14f1** (Universal 3D / URP template), C#
+- **Unity 6000.6.9f1** (Universal 3D / URP template), C#
 - **AR Foundation** with **Apple ARKit** (iPhone) and **Google ARCore** (Android)
 - **Unity Inference Engine** (formerly Sentis) to run the ONNX model on the phone
-- **YOLOv8n** (ultralytics) trained on Google Colab, data labeled on Roboflow (PlantDoc, PlantVillage and photos taken by the team)
+- **YOLOv8n** (ultralytics), first version trained on [PlantDoc](https://github.com/pratikkayal/PlantDoc-Object-Detection-Dataset) (CC BY 4.0); photos taken by the team will be added later
 - **TextMeshPro** for the interface
 
 ## Non-functional requirements (summary)
@@ -71,3 +71,29 @@ Model classes: `folha_saudavel`, `folha_amarelada`, `mancha_fungica`, `oidio`, `
 ## Documentation
 
 The full plan (target audience, context, goals and requirements) is in [PlanejamentoAplicativo_CuidAR.docx](PlanejamentoAplicativo_CuidAR.docx) (in Portuguese).
+
+## Running the project
+
+Requirements: Unity **6000.6.9f1** with the **Android Build Support** and/or **iOS Build Support** modules; Xcode for iPhone.
+
+1. Open the project in Unity Hub. On first open, Unity downloads the packages (AR Foundation, ARCore, ARKit, Inference Engine).
+2. **Edit → Project Settings → XR Plug-in Management**: on the Android tab, *Google ARCore* is already checked; on the **iOS tab, check *Apple ARKit*** (only needed once; Unity creates the files in `Assets/XR`).
+3. **File → Build Profiles**: add `Assets/Scenes/MainMenu.unity` (index 0) and `Assets/Scenes/ARScene.unity`.
+4. Build:
+   - **Android:** switch to Android, connect the phone with USB debugging on, then *Build And Run*.
+   - **iPhone:** switch to iOS, *Build*, open the generated `Unity-iPhone.xcodeproj` in Xcode, select your Apple ID team under *Signing & Capabilities* (a free account is enough, no App Store needed), then run on the iPhone. With a free account the app must be reinstalled every 7 days, and you need to trust the developer in *Settings → General → VPN & Device Management*.
+
+### Testing without a phone
+
+In the `SceneController` object of `ARScene`, the `CuidARController` component has two debug options:
+
+- **Fake Detections:** draws example boxes, to test the interface in the Editor (with XR Simulation) without a model.
+- **Show Model Input:** shows, in the bottom-left corner, the image the model receives. If it appears upside down, check **Flip Model Input**.
+
+## Detection model
+
+- Files: `Assets/Resources/Models/cuidar_yolov8n.onnx` (model) and `cuidar_labels.txt` (one class per line, in the model's order). To use a new model, just replace both files.
+- Input: 640x640 RGB image (the centered square of the screen, shown as the scan frame). Output: `[1, 4 + classes, 8400]`.
+- Runs on the GPU every 4 frames; boxes below 0.5 confidence are discarded, overlapping boxes are merged (NMS), and a box only appears after 3 consecutive detections.
+- Training (reproducible): PlantDoc converted to the 4 classes, then `yolo detect train model=yolov8n.pt imgsz=640` and `yolo export format=onnx opset=15 imgsz=640`.
+- Known limitation: PlantDoc contains crop plants (tomato, potato, corn, apple...), not houseplants, so accuracy on houseplants will be lower until we add our own photos.

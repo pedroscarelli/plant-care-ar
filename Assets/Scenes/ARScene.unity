@@ -455,6 +455,7 @@ GameObject:
   m_Component:
   - component: {fileID: 659020166}
   - component: {fileID: 659020167}
+  - component: {fileID: 659020168}
   m_Layer: 0
   m_Name: SceneController
   m_TagString: Untagged
@@ -490,6 +491,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BackButtonController
   menuSceneName: MainMenu
+--- !u!114 &659020168
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 659020165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f49ab5869e8843d0956ff028416c393b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CuidAR.CuidARController
+  model: {fileID: 0}
+  labels: {fileID: 0}
+  inputSize: 640
+  confidenceThreshold: 0.5
+  iouThreshold: 0.45
+  frameInterval: 4
+  requiredHits: 3
+  showModelInput: 0
+  flipModelInput: 0
+  fakeDetections: 0
 --- !u!1 &749000505
 GameObject:
   m_ObjectHideFlags: 0
