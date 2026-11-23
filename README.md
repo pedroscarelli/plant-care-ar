@@ -6,7 +6,7 @@ Project for the Virtual Reality course (Computer Science – FURB, 2026/2).
 
 **Team:** João Fissmer ([@cyanide0081](https://github.com/cyanide0081)) and Pedro Scarelli ([@pedroscarelli](https://github.com/pedroscarelli))
 
-**Kanban:** [GitHub Projects – cuidAR](https://github.com/users/pedroscarelli/projects/1) · **Slides:** [CuidAR – Apresentação.pdf](CuidAR%20–%20Apresentação.pdf)
+**Repository:** [github.com/pedroscarelli/plant-care-ar](https://github.com/pedroscarelli/plant-care-ar) · **Kanban:** [GitHub Projects – cuidAR](https://github.com/users/pedroscarelli/projects/1) · **Slides:** [CuidAR – Apresentação.pdf](CuidAR%20–%20Apresentação.pdf)
 
 ## The idea
 
