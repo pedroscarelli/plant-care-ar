@@ -1,99 +1,103 @@
-# CuidAR – Augmented Reality Plant Diagnosis
+# CuidAR – Care for a Virtual Plant in Augmented Reality
 
-Point your phone's camera at a plant: CuidAR marks the leaves that have problems and shows, in an Augmented Reality panel next to the pot, what is wrong with the plant and how to treat it.
+Put the printed QR marker on a table, point the phone at it and a thirsty plant appears on top of it. The phone becomes your gardening tool: water the plant with a **hose** or a **watering can**, prune its dry leaves with **scissors** and tap away the **bugs** that come to eat it, all in AR.
 
 Project for the Virtual Reality course (Computer Science – FURB, 2026/2).
 
 **Team:** João Fissmer ([@cyanide0081](https://github.com/cyanide0081)) and Pedro Scarelli ([@pedroscarelli](https://github.com/pedroscarelli))
 
-**Kanban:** [GitHub Projects – cuidAR](https://github.com/users/pedroscarelli/projects/1)
+**Kanban:** [GitHub Projects – cuidAR](https://github.com/users/pedroscarelli/projects/1) · **Slides:** [CuidAR – Apresentação.pdf](CuidAR%20–%20Apresentação.pdf)
 
 ## The idea
 
-Lots of people have plants at home and notice that one "looks off" (yellow leaves, spots, white powder, little bugs), but don't know what it is or what to do. CuidAR uses a neural network running on the phone itself to identify the problem on each leaf and shows the treatment directly in the real world, anchored to the plant.
+A printed **QR marker** goes on a table. Pointing the phone at it makes a **virtual potted plant** appear on the marker, at real scale, anchored to the table. The user takes care of it with three tools:
 
-**Target audience:** people with plants at home, on balconies or in gardens (home, school and community gardens), especially beginners.
+| Tool | How to use | What happens |
+|------|------------|--------------|
+| **Hose** (default) | put the **+** crosshair on the pot and **hold a finger on the screen** | a fast jet of water hits the soil and the plant hydrates |
+| **Watering can** | put the **+** on the pot and **tilt the phone sideways**, like pouring | water arcs out of the spout; the more you tilt, the stronger the stream |
+| **Scissors** | **tap a leaf** | the scissors fly to the leaf, snip it, the leaf falls spinning to the table and later grows back; dry brown leaves are the ones that need pruning |
 
-**Interdisciplinarity:** Augmented Reality + Artificial Intelligence/computer vision + Human-Computer Interaction + Biology/Agronomy (plant pathology) + Sustainability.
+While it drinks, the plant **comes back to life live**: leaves rise and turn from yellow to green, the soil darkens and at 100% a flower blooms with sparkles, a chime and a vibration. After that, little **bugs** crawl onto the leaves and eat the plant (it dries faster) until the user **taps them** away.
 
-## Goals
+There are **three plant models** to choose from: **Daisy** (regular water, pink flower), **Cactus** (needs little water, shrivels and droops its arms when dry) and **Sunflower** (needs a lot of water, its heavy head hangs down with closed petals when dry).
 
-- Detect visible leaf problems in real time (yellowing leaf, fungal spot, powdery mildew and pests) as well as healthy leaves, with a neural network (YOLOv8n) running on the device.
-- Display in AR, next to the plant, a suggested diagnosis and basic, safe treatment steps.
-- Help non-experts treat problems early, avoiding unnecessary use of chemicals.
-- Keep the architecture extensible: new diseases or species only require a new model and new data, with no code changes.
+This follows the professor's suggestion after N3 to simplify the project (the first version used a neural network to diagnose real leaves; see *Previous version* below) and focus on the AR interaction.
+
+**Target audience:** children, students and beginners learning how to care for plants (home, school and community gardens).
+
+**Interdisciplinarity:** Augmented Reality + Human-Computer Interaction (gestures with the phone) + Biology (water needs of different plants, pruning, pests) + Physics (the water is a ballistic particle stream under gravity).
 
 ## How it works
 
 ```
-camera (AR Foundation) → YOLO model (Inference Engine) → stabilizer (3 consecutive detections)
-                       → treatment table (ScriptableObject) → interface (pop-up / AR panel)
+camera (AR Foundation) → image tracking of the QR marker (runtime reference library, full marker or QR only)
+                       → virtual plant anchored on the marker (stays put when the marker leaves the view)
+phone pose (6DoF)      → ray from the screen center (+) onto the soil / table → where the water lands
+hose: finger held  /  can: phone roll  → water particles solved to land on the + → hydration ↑ → animations
+scissors: tap      → closest leaf projected on screen → snip animation → falling leaf → regrowth
+bugs: tap          → closest bug projected on screen → squash + poof
 ```
 
-Model classes: `folha_saudavel`, `folha_amarelada`, `mancha_fungica`, `oidio` (healthy leaf, yellowing leaf, fungal spot, powdery mildew). `praga` (pest) is planned, but the current dataset has too few pest examples, so the first model does not include it.
+- **Marker:** `Marker/cuidar_marker_A4.pdf` (print at 100%, the square is 15 cm). The leaf border gives ARKit/ARCore more features than a bare QR code, so detection is faster. The marker also works **cut around the QR code** (7.4 cm square): both images are registered in a runtime reference library (`Assets/Resources/Markers`).
+- **Everything is procedural:** the plants, pot, tools and bugs are built in code from generated meshes, and all sounds (water, chime, pop, snip) are synthesized, so the project has no model or audio files.
+- **Plant state:** hydration from 0 to 1 (starts at 10%; the cactus fills 2× faster, the sunflower 0.7×; slowly dries again, faster with bugs on it).
 
 ## Functional requirements
 
-| ID | The user... | Screen |
-|----|-------------|--------|
-| [RF01](https://github.com/pedroscarelli/plant-care-ar/issues/1) | opens the app, allows camera access and sees the live image with the detected planes | 1, 2 |
-| [RF02](https://github.com/pedroscarelli/plant-care-ar/issues/2) | points at the plant and sees each leaf marked with the problem found or as healthy | 2, 3 |
-| [RF03](https://github.com/pedroscarelli/plant-care-ar/issues/3) | sees a pop-up with a suggested diagnosis, treatment steps and a safety warning | 4 |
-| [RF04](https://github.com/pedroscarelli/plant-care-ar/issues/4) | sees the treatment panel anchored in the real world, next to the pot and linked to the diseased leaf | 6 |
-| [RF05](https://github.com/pedroscarelli/plant-care-ar/issues/5) | gets "No problem found" when the plant is healthy | 5 |
-| [RF06](https://github.com/pedroscarelli/plant-care-ar/issues/6) | closes the pop-up and scans again | 4 |
-| [RF07](https://github.com/pedroscarelli/plant-care-ar/issues/7) | taps a leaf to see the treatment for that problem, when there is more than one | 3 |
-| [RF08](https://github.com/pedroscarelli/plant-care-ar/issues/8) | uses a printed image marker to trigger the same pop-up (demo mode / plan B) | scenario |
-
-## Screen prototypes
-
-![Screens 1 to 3](telas/telas_1-3.png)
-
-![Screens 4 to 6](telas/telas_4-6.png)
-
-![Real-world scenario](telas/cenario_mundo_real.png)
+| ID | The user... |
+|----|-------------|
+| RF01 | opens the app, allows camera access and sees the real world through the camera (with **Open Settings** if access was denied) |
+| RF02 | points the camera at the printed QR marker (full or cut around the QR code) and the app recognizes it |
+| RF03 | sees a thirsty virtual plant anchored on the marker, at real scale |
+| RF04 | waters the plant with the **hose** (default tool): aims the **+** at the pot and holds the screen |
+| RF05 | waters the plant with the **watering can** by tilting the phone sideways |
+| RF06 | sees the plant hydrate (leaves, colors, soil, bar) and celebrate at 100% (flower, sparkles, chime, vibration), with feedback when watering wrong and **Dry again** to replay |
+| RF07 | chooses between three plant models (Daisy, Cactus, Sunflower) with different looks and water needs |
+| RF08 | takes care of the plant: prunes dry leaves with the **scissors** and taps away the **bugs** |
 
 ## Technologies
 
-- **Unity 6000.6.9f1** (Universal 3D / URP template), C#
-- **AR Foundation** with **Apple ARKit** (iPhone) and **Google ARCore** (Android)
-- **Unity Inference Engine** (formerly Sentis) to run the ONNX model on the phone
-- **YOLOv8n** (ultralytics), first version trained on [PlantDoc](https://github.com/pratikkayal/PlantDoc-Object-Detection-Dataset) (CC BY 4.0); photos taken by the team will be added later
-- **TextMeshPro** for the interface
-
-## Non-functional requirements (summary)
-
-- **Performance:** smooth camera (~30 fps), detection 5 to 10 times per second, result within ~1 s.
-- **Reliability:** minimum confidence of 0.5 with NMS; a problem only appears after 3 identical consecutive detections.
-- **Limitations:** works best 20 to 50 cm from the plant and in good lighting. The diagnosis is a suggestion and does not replace an agronomist.
-- **Usability:** Portuguese-language interface, colors by problem type, at most one tap per action.
-
-## Documentation
-
-The full plan (target audience, context, goals and requirements) is in [PlanejamentoAplicativo_CuidAR.docx](PlanejamentoAplicativo_CuidAR.docx) (in Portuguese).
+- **Unity 6000.6.9f1** (URP), C#
+- **AR Foundation 6** with **Apple ARKit** (iPhone) and **Google ARCore** (Android)
+- **Image tracking** (ARTrackedImageManager with a mutable runtime library)
+- **Particle System** for the water, splashes, sparkles and bug poofs
+- **TextMeshPro** for the interface, **Input System** for touch and sensors
 
 ## Running the project
 
-Requirements: Unity **6000.6.9f1** with the **Android Build Support** and/or **iOS Build Support** modules; Xcode for iPhone.
+Requirements: Unity **6000.6.9f1** with **Android Build Support** and/or **iOS Build Support**; Xcode for iPhone. Print `Marker/cuidar_marker_A4.pdf` at 100% scale.
 
-1. Open the project in Unity Hub. On first open, Unity downloads the packages (AR Foundation, ARCore, ARKit, Inference Engine).
-2. **Edit → Project Settings → XR Plug-in Management**: on the Android tab, *Google ARCore* is already checked; on the **iOS tab, check *Apple ARKit*** (only needed once; Unity creates the files in `Assets/XR`).
-3. **File → Build Profiles**: add `Assets/Scenes/MainMenu.unity` (index 0) and `Assets/Scenes/ARScene.unity`.
-4. Build:
-   - **Android:** switch to Android, connect the phone with USB debugging on, then *Build And Run*.
-   - **iPhone:** switch to iOS, *Build*, open the generated `Unity-iPhone.xcodeproj` in Xcode, select your Apple ID team under *Signing & Capabilities* (a free account is enough, no App Store needed), then run on the iPhone. With a free account the app must be reinstalled every 7 days, and you need to trust the developer in *Settings → General → VPN & Device Management*.
+### Android
 
-### Testing without a phone
+1. Open the project in Unity Hub (the first open downloads the packages).
+2. **File → Build Profiles → Android → Switch Platform**, connect the phone with USB debugging on and click **Build And Run**. The scenes (`MainMenu`, `ARScene`) and ARCore are already configured.
 
-In the `SceneController` object of `ARScene`, the `CuidARController` component has two debug options:
+Or from the command line (Unity closed):
 
-- **Fake Detections:** draws example boxes, to test the interface in the Editor (with XR Simulation) without a model.
-- **Show Model Input:** shows, in the bottom-left corner, the image the model receives. If it appears upside down, check **Flip Model Input**.
+```bash
+/Applications/Unity/Hub/Editor/6000.6.9f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath . \
+  -buildTarget Android -executeMethod CuidARBuild.BuildAndroid -logFile -
+adb install -r Builds/cuidAR.apk
+```
 
-## Detection model
+The phone must support ARCore ([list of devices](https://developers.google.com/ar/devices)).
 
-- Files: `Assets/Resources/Models/cuidar_yolov8n.onnx` (model) and `cuidar_labels.txt` (one class per line, in the model's order). To use a new model, just replace both files.
-- Input: 640x640 RGB image (the centered square of the screen, shown as the scan frame). Output: `[1, 4 + classes, 8400]`.
-- Runs on the GPU every 4 frames; boxes below 0.5 confidence are discarded, overlapping boxes are merged (NMS), and a box only appears after 3 consecutive detections.
-- Training (reproducible): PlantDoc converted to the 4 classes, then `yolo detect train model=yolov8n.pt imgsz=640` and `yolo export format=onnx opset=15 imgsz=640`.
-- Known limitation: PlantDoc contains crop plants (tomato, potato, corn, apple...), not houseplants, so accuracy on houseplants will be lower until we add our own photos.
+### iPhone
+
+- With Unity closed and the iPhone connected and unlocked: `Tools/run_ios.sh` (exports the Xcode project, builds, installs, launches and saves the logs to `Logs/iphone.log`). Edit the team ID at the top of the script for your Apple account.
+- Or in Unity: **Build Profiles → iOS → Build**, open `plant-care-ar/Unity-iPhone.xcodeproj` in Xcode, choose your team under *Signing & Capabilities* and run on the iPhone (not the Simulator). With a free account the app must be reinstalled every 7 days, and you need to trust the developer in *Settings → General → VPN & Device Management*.
+
+### Testing in the Editor
+
+Press Play in `ARScene`: **P** places the plant in front of the camera, hold **Space** (or the mouse with the hose) to water, **B** spawns bugs, click leaves with the scissors.
+
+## Platform notes
+
+- **iOS camera permission:** Unity strips its iOS camera-permission code when the project doesn't use `WebCamTexture`, so `Application.RequestUserAuthorization` answered "denied" without asking. The app asks through a small native plugin, `Assets/Plugins/iOS/CuidARCameraPermission.mm` (AVFoundation). `Assets/Editor/IOSBuildCheck.cs` stops any iOS build where ARKit is disabled or the *Camera Usage Description* is empty.
+- **iOS 27 orientation:** Unity's iOS layer uses an orientation API that became a no-op on iOS 27, which could leave the AR camera rotated by 90°. `ARCameraPose` compares the AR camera with the gravity sensor and corrects it (iPhone only).
+- **Shaders/physics stripping:** materials are copies of `Assets/Resources/CuidAR/CuidARLit.mat` (keeps the URP Lit shader in the build) and meshes are generated instead of `CreatePrimitive` (whose colliders are stripped from builds).
+
+## Previous version (N3): leaf diagnosis
+
+The first version used a YOLOv8n network (Unity Inference Engine) to detect leaf problems on real plants. Its code is still in `Assets/Scripts/Detection`, `Assets/Scripts/UI` and `CuidARController.cs`, but it is no longer used by the scene. The model is `Assets/Resources/Models/cuidar_yolov8n.onnx` (trained on PlantDoc converted to 4 classes). The planning document of that version is [PlanejamentoAplicativo_CuidAR.docx](PlanejamentoAplicativo_CuidAR.docx) (in Portuguese).

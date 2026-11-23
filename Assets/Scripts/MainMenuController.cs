@@ -1,63 +1,69 @@
 using System.Collections;
+using CuidAR;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-#if UNITY_ANDROID
-using UnityEngine.Android;
-#endif
+using UnityEngine.UI;
 
 public class MainMenuController : MonoBehaviour
 {
     [SerializeField] private string arSceneName = "ARScene";
     [SerializeField] private GameObject deniedMessage;
 
+    private bool m_Requesting;
+
     private void Start()
     {
         if (deniedMessage != null)
             deniedMessage.SetActive(false);
+
+        // Background, title and illustration (built in code, see MainMenuStyle).
+        Button startButton = null;
+        foreach (var button in FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (button.name == "StartButton")
+                startButton = button;
+        var canvas = startButton != null ? startButton.GetComponentInParent<Canvas>() : FindAnyObjectByType<Canvas>();
+        if (canvas != null)
+            MainMenuStyle.Apply(canvas.rootCanvas, startButton);
     }
 
     // Hooked to the Start button's OnClick
     public void OnStartPressed()
     {
-#if UNITY_ANDROID && !UNITY_EDITOR
-        if (Permission.HasUserAuthorizedPermission(Permission.Camera))
-        {
-            LoadAR();
-            return;
-        }
-
-        var callbacks = new PermissionCallbacks();
-        callbacks.PermissionGranted += _ => LoadAR();
-        callbacks.PermissionDenied += _ => ShowDenied();
-        callbacks.PermissionDeniedAndDontAskAgain += _ => ShowDenied();
-        Permission.RequestUserPermission(Permission.Camera, callbacks);
-#elif UNITY_IOS && !UNITY_EDITOR
-        StartCoroutine(RequestCameraIOS());
-#else
-        LoadAR();
-#endif
+        if (!m_Requesting)
+            StartCoroutine(RequestAndLoad());
     }
 
-#if UNITY_IOS
-    // iOS shows the system prompt (text from Player Settings > Camera Usage Description) only once;
-    // after a denial the user has to enable the camera in Settings.
-    private IEnumerator RequestCameraIOS()
+    private IEnumerator RequestAndLoad()
     {
-        if (!Application.HasUserAuthorization(UserAuthorization.WebCam))
-            yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
+        m_Requesting = true;
+        // Shows the system prompt the first time (iOS uses a native plugin, see CameraPermission).
+        yield return CameraPermission.Request();
+        m_Requesting = false;
 
-        if (Application.HasUserAuthorization(UserAuthorization.WebCam))
-            LoadAR();
+        if (CameraPermission.IsGranted)
+            SceneManager.LoadScene(arSceneName);
         else
             ShowDenied();
     }
-#endif
 
     private void ShowDenied()
     {
-        if (deniedMessage != null)
-            deniedMessage.SetActive(true);
+        if (deniedMessage == null)
+            return;
+        deniedMessage.SetActive(true);
+        // Tapping the message opens this app's page in the system Settings (camera toggle).
+        if (deniedMessage.GetComponent<Button>() == null)
+        {
+            deniedMessage.AddComponent<Button>().onClick.AddListener(CameraPermission.OpenAppSettings);
+            foreach (var graphic in deniedMessage.GetComponentsInChildren<Graphic>())
+                graphic.raycastTarget = true;
+        }
     }
 
-    private void LoadAR() => SceneManager.LoadScene(arSceneName);
+    // Coming back from Settings with the camera allowed: hide the message.
+    private void OnApplicationFocus(bool focus)
+    {
+        if (focus && deniedMessage != null && deniedMessage.activeSelf && CameraPermission.IsGranted)
+            deniedMessage.SetActive(false);
+    }
 }
