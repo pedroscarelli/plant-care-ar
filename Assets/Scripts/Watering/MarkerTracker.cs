@@ -23,6 +23,8 @@ namespace CuidAR.Watering
         public bool hasPose { get; private set; }
         public Pose pose { get; private set; }
         public string error { get; private set; }
+        /// <summary>The plant was placed by tapping on a table: the marker is ignored from then on.</summary>
+        public bool manual { get; private set; }
 
         ARTrackedImageManager m_Manager;
 
@@ -125,6 +127,8 @@ namespace CuidAR.Watering
 
         void Consider(ARTrackedImage image)
         {
+            if (manual)
+                return;
             if (image.trackingState == TrackingState.Tracking)
             {
                 if (state != State.Tracking)
@@ -138,6 +142,16 @@ namespace CuidAR.Watering
                 // Limited / None: the marker left the view. Keep the last pose.
                 state = State.Lost;
             }
+        }
+
+        /// <summary>Places the plant at a pose chosen by the user (tap on a detected table).</summary>
+        public void PlaceManually(Pose placed)
+        {
+            manual = true;
+            pose = placed;
+            hasPose = true;
+            state = State.Tracking;
+            Debug.Log($"[CuidAR] Plant placed by tap at {placed.position}");
         }
 
         /// <summary>Editor helper: pretends the marker was found at the given pose.</summary>

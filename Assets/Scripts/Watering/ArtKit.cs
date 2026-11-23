@@ -77,6 +77,36 @@ namespace CuidAR.Watering
             return t;
         }
 
+        /// <summary>Flat ring (annulus) lying on the XZ plane, facing up.</summary>
+        public static Transform Ring(string name, Transform parent, float radius, float width, Material material)
+        {
+            const int segments = 48;
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var triangles = new List<int>();
+            for (int i = 0; i <= segments; i++)
+            {
+                float a = 2f * Mathf.PI * i / segments;
+                var d = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+                vertices.Add(d * (radius - width * 0.5f));
+                vertices.Add(d * (radius + width * 0.5f));
+                normals.Add(Vector3.up);
+                normals.Add(Vector3.up);
+            }
+            for (int i = 0; i < segments; i++)
+            {
+                int inner = i * 2, outer = inner + 1, nextInner = inner + 2, nextOuter = inner + 3;
+                triangles.AddRange(new[] { inner, nextOuter, outer, inner, nextInner, nextOuter });
+            }
+            var go = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
+            go.GetComponent<MeshFilter>().sharedMesh = Build("CuidAR Ring", vertices, normals, triangles);
+            var renderer = go.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            go.transform.SetParent(parent, false);
+            return go.transform;
+        }
+
         // ---------- procedural meshes ----------
 
         static Mesh MeshFor(PrimitiveType type)

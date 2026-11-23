@@ -26,6 +26,7 @@ namespace CuidAR.Watering
         TextMeshProUGUI m_BarLabel;
         GameObject m_ResetButton;
         GameObject m_SettingsButton;
+        GameObject m_MoveButton;
         GameObject m_Reticle;
         Image[] m_ReticleBars;
         GameObject m_SpeciesRoot;
@@ -35,6 +36,8 @@ namespace CuidAR.Watering
 
         public event Action resetPressed;
         public event Action settingsPressed;
+        /// <summary>"Move" button: place the plant somewhere else.</summary>
+        public event Action movePressed;
         /// <summary>A plant model button was tapped (index into the names given to Build).</summary>
         public event Action<int> speciesPressed;
         /// <summary>A tool button was tapped (index into the tool names given to Build).</summary>
@@ -114,6 +117,22 @@ namespace CuidAR.Watering
             buttonTextRect.anchorMax = Vector2.one;
             buttonTextRect.offsetMin = buttonTextRect.offsetMax = Vector2.zero;
             m_ResetButton = button.gameObject;
+
+            // "Move" button (top right, the scene's Back button is top left).
+            var move = CreateRect("MoveButton", root);
+            move.anchorMin = move.anchorMax = move.pivot = new Vector2(1f, 1f);
+            move.anchoredPosition = new Vector2(-40f, -60f);
+            move.sizeDelta = new Vector2(240f, 100f);
+            move.gameObject.AddComponent<Image>().color = k_Dark;
+            move.gameObject.AddComponent<Button>().onClick.AddListener(() => movePressed?.Invoke());
+            var moveText = CreateText("Text", move, 38, FontStyles.Bold);
+            moveText.text = "Move";
+            var moveTextRect = (RectTransform)moveText.transform;
+            moveTextRect.anchorMin = Vector2.zero;
+            moveTextRect.anchorMax = Vector2.one;
+            moveTextRect.offsetMin = moveTextRect.offsetMax = Vector2.zero;
+            m_MoveButton = move.gameObject;
+            m_MoveButton.SetActive(false);
 
             // "Open Settings" button (center), shown only when camera access was denied.
             var settings = CreateRect("SettingsButton", root);
@@ -233,6 +252,8 @@ namespace CuidAR.Watering
         }
 
         public void SetSettingsVisible(bool visible) => m_SettingsButton.SetActive(visible);
+
+        public void SetMoveVisible(bool visible) => m_MoveButton.SetActive(visible);
 
         /// <summary>Center crosshair; blue when it is on the pot.</summary>
         public void SetReticle(bool visible, bool onTarget)

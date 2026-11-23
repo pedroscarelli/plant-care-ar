@@ -4,13 +4,16 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.XR;
 using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 namespace CuidAR.Watering
 {
     /// <summary>
     /// AR watering experience (ARScene):
-    ///  1. the camera looks for the printed QR marker on the table (image tracking);
-    ///  2. a thirsty virtual plant appears on top of the marker;
+    ///  1. the camera looks for the printed QR marker on the table (image tracking) and, at the same time, for
+    ///     tables (plane detection): a green ring follows the center of the screen on the table;
+    ///  2. a thirsty virtual plant appears on top of the marker, or where the user taps to place it
+    ///     ("Move" places it somewhere else);
     ///  3. the user brings the phone close and tips it like a watering can;
     ///  4. water pours from the virtual can, and while it reaches the pot the plant hydrates:
     ///     leaves rise and turn green, the soil darkens and a flower blooms; at 100% it celebrates.
@@ -61,6 +64,12 @@ namespace CuidAR.Watering
         XROrigin m_Origin;
         Camera m_Camera;
         ARPlaneManager m_PlaneManager;
+        ARRaycastManager m_Raycast;
+        Transform m_PlacementRing;   // shows where a tap will put the plant
+        bool m_RingVisible;
+        Pose m_RingPose;
+        bool m_Moving;               // "Move" pressed: waiting for a tap on a table
+        static readonly System.Collections.Generic.List<ARRaycastHit> s_Hits = new();
 
         WateringOverlay m_Overlay;
         MarkerTracker m_Tracker;
@@ -101,6 +110,14 @@ namespace CuidAR.Watering
             if (m_Camera != null)
                 EnsurePoseDriver(m_Camera.gameObject);
             m_PlaneManager = FindAnyObjectByType<ARPlaneManager>();
+            // Raycasts against detected tables, for placing the plant without the marker.
+            if (m_Origin != null)
+            {
+                m_Raycast = m_Origin.GetComponent<ARRaycastManager>();
+                if (m_Raycast == null)
+                    m_Raycast = m_Origin.gameObject.AddComponent<ARRaycastManager>();
+            }
+            m_PlacementRing = CreatePlacementRing();
 
             m_Overlay = gameObject.AddComponent<WateringOverlay>();
             m_Overlay.Build(System.Array.ConvertAll(k_Species, VirtualPlant.DisplayName), k_ToolNames);
@@ -108,6 +125,7 @@ namespace CuidAR.Watering
             m_Overlay.resetPressed += ResetPlant;
             m_Overlay.speciesPressed += index => ChangeSpecies(k_Species[index]);
             m_Overlay.settingsPressed += CameraPermission.OpenAppSettings;
+            m_Overlay.movePressed += StartMoving;
 
             m_Tracker = gameObject.AddComponent<MarkerTracker>();
             m_Hydration = startHydration;
@@ -163,12 +181,8 @@ namespace CuidAR.Watering
                 yield break;
             }
 
-            // Planes are not needed (the marker gives the table position) and would clutter the view.
-            if (m_PlaneManager != null)
-            {
-                m_PlaneManager.SetTrackablesActive(false);
-                m_PlaneManager.enabled = false;
-            }
+            // Tables (horizontal planes) are detected so the plant can also be placed with a tap, without the marker.
+            SetPlaneDetection(true);
 
             // The full printed marker, and the QR code square alone (for a marker cut around the QR code).
             if (markerImage == null)
@@ -219,16 +233,37 @@ namespace CuidAR.Watering
 
             HandleEditorInput();
 
-            if (!m_Tracker.hasPose)
+            if (!m_Tracker.hasPose || m_Moving)
             {
-                ShowSearching();
-                m_Overlay.SetSpecies(false, 0);
-                m_Overlay.SetTool(false, 0);
-                return;
+                bool placed = UpdatePlacement();
+                if (!m_Tracker.hasPose)
+                {
+                    ShowSearching();
+                    m_Overlay.SetSpecies(false, 0);
+                    m_Overlay.SetTool(false, 0);
+                    return;
+                }
+                if (m_Moving && !placed)
+                {
+                    // Plant already on the table: it stays put until the tap on its new spot.
+                    FollowMarker();
+                    m_Can.triggerHeld = false;
+                    m_Overlay.SetReticle(false, false);
+                    m_Overlay.SetStatus(m_RingVisible ? "Tap to move the plant here" : "Looking for a table...", m_RingVisible);
+                    m_Overlay.SetHint(m_RingVisible ? "Aim the green ring at the new spot" : "Move the phone slowly over a table");
+                    return;
+                }
+            }
+            else
+            {
+                m_PlacementRing.gameObject.SetActive(false);
+                if (m_PlaneManager != null && m_PlaneManager.enabled)
+                    SetPlaneDetection(false); // placed by the QR marker: hide the detected tables
             }
 
             if (m_Plant == null)
                 SpawnPlant();
+            m_Overlay.SetMoveVisible(!m_EditorMode && !m_Moving);
 
             FollowMarker();
             HandlePointer();
@@ -244,10 +279,7 @@ namespace CuidAR.Watering
                     m_Overlay.SetStatus("This device does not support AR", false);
                     m_Overlay.SetHint(null);
                     return;
-                case MarkerTracker.State.Failed when !m_EditorMode:
-                    m_Overlay.SetStatus(m_Tracker.error, false);
-                    m_Overlay.SetHint(null);
-                    return;
+                // Failed image tracking (marker rejected): the plant can still be placed on a table with a tap.
             }
 
             if (!m_EditorMode && ARSession.state < ARSessionState.SessionTracking)
@@ -257,8 +289,106 @@ namespace CuidAR.Watering
                 return;
             }
 
-            m_Overlay.SetStatus("Point the camera at the QR code", false);
-            m_Overlay.SetHint(m_EditorMode ? "Editor: press P to place the plant" : "Lay the printed marker flat on a table");
+            if (m_EditorMode)
+            {
+                m_Overlay.SetStatus("Point the camera at the QR code", false);
+                m_Overlay.SetHint("Editor: press P to place the plant");
+            }
+            else if (m_RingVisible)
+            {
+                m_Overlay.SetStatus("Tap to place the plant here", true);
+                m_Overlay.SetHint("Aim the green ring at a table (or point at the QR code)");
+            }
+            else
+            {
+                m_Overlay.SetStatus("Looking for a table...", false);
+                m_Overlay.SetHint("Move the phone slowly over a table, or point at the QR code");
+            }
+        }
+
+        // ---------- placing the plant without the marker ----------
+
+        void SetPlaneDetection(bool on)
+        {
+            if (m_PlaneManager == null)
+                return;
+            if (on)
+                m_PlaneManager.requestedDetectionMode = PlaneDetectionMode.Horizontal;
+            m_PlaneManager.enabled = on;
+            m_PlaneManager.SetTrackablesActive(on); // detected tables are drawn only while placing
+        }
+
+        Transform CreatePlacementRing()
+        {
+            var ring = new GameObject("PlacementRing").transform;
+            var green = ArtKit.Lit(new Color(0.3f, 0.9f, 0.45f), 0.6f);
+            ArtKit.Ring("Outer", ring, VirtualPlant.PotRadius * 1.15f, 0.006f, green);
+            ArtKit.Ring("Inner", ring, VirtualPlant.PotRadius * 0.45f, 0.004f, green);
+            ArtKit.Shape(PrimitiveType.Cylinder, "Dot", ring, new Vector3(0f, 0.001f, 0f), new Vector3(0.008f, 0.001f, 0.008f), green);
+            ring.gameObject.SetActive(false);
+            return ring;
+        }
+
+        /// <summary>
+        /// Casts the center of the screen onto the detected tables; shows the ring there and places the plant on a
+        /// tap (anywhere on the screen, except buttons). Returns true on the frame the plant was placed.
+        /// </summary>
+        bool UpdatePlacement()
+        {
+            m_RingVisible = !m_EditorMode && TryHitTable(out m_RingPose);
+            m_PlacementRing.gameObject.SetActive(m_RingVisible);
+            if (!m_RingVisible)
+                return false;
+
+            m_PlacementRing.SetPositionAndRotation(m_RingPose.position + Vector3.up * 0.002f, Quaternion.Euler(0f, Time.time * 40f, 0f));
+            m_PlacementRing.localScale = Vector3.one * plantScale * (1f + Mathf.Sin(Time.time * 5f) * 0.06f);
+
+            var pointer = Pointer.current;
+            if (pointer == null || !pointer.press.wasPressedThisFrame || PlantPests.IsOverButton(pointer.position.ReadValue()))
+                return false;
+
+            // The plant faces the user.
+            var toCamera = Vector3.ProjectOnPlane(m_Camera.transform.position - m_RingPose.position, Vector3.up);
+            var rotation = toCamera.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(toCamera.normalized, Vector3.up) : Quaternion.identity;
+            m_Tracker.PlaceManually(new Pose(m_RingPose.position, rotation));
+            m_Moving = false;
+            m_PressConsumed = true; // this tap must not also spray the hose
+            m_PlacementRing.gameObject.SetActive(false);
+            SetPlaneDetection(false);
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+            if (m_Plant != null)
+                Handheld.Vibrate();
+#endif
+            return true;
+        }
+
+        bool TryHitTable(out Pose pose)
+        {
+            pose = default;
+            if (m_Raycast == null || m_Camera == null)
+                return false;
+            var center = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            if (!m_Raycast.Raycast(center, s_Hits, TrackableType.PlaneWithinPolygon | TrackableType.PlaneEstimated))
+                return false;
+            foreach (var hit in s_Hits)
+            {
+                // Only surfaces facing up and below the phone (tables, floor).
+                if (Vector3.Dot(hit.pose.up, Vector3.up) > 0.9f && hit.pose.position.y < m_Camera.transform.position.y - 0.05f)
+                {
+                    pose = hit.pose;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void StartMoving()
+        {
+            if (m_Plant == null)
+                return;
+            m_Moving = true;
+            m_Overlay.SetMoveVisible(false);
+            SetPlaneDetection(true);
         }
 
         void SpawnPlant()
