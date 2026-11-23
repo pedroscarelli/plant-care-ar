@@ -1,6 +1,6 @@
 # CuidAR – Care for a Virtual Plant in Augmented Reality
 
-Point the phone at any table, tap, and a thirsty plant appears on it. The phone becomes your gardening tool: water the plant with a **hose** or a **watering can**, prune its dry leaves with **scissors** and tap away the **bugs** that come to eat it, all in AR.
+Find a flat table, point the phone at it, choose the place you want your plant to grow, and a thirsty plant appears on top of it. The phone becomes your gardening tool: water the plant with a **hose** or a **watering can**, prune its dry leaves with **scissors** and tap away the **bugs** that come to eat it, all in AR.
 
 Project for the Virtual Reality course (Computer Science – FURB, 2026/2).
 
@@ -100,4 +100,4 @@ Press Play in `ARScene`: **P** places the plant in front of the camera, hold **S
 
 ## Previous version (N3): leaf diagnosis
 
-The first version used a YOLOv8n network (Unity Inference Engine) to detect leaf problems on real plants. Its code is still in `Assets/Scripts/Detection`, `Assets/Scripts/UI` and `CuidARController.cs`, but it is no longer used by the scene. The model is `Assets/Resources/Models/cuidar_yolov8n.onnx` (trained on PlantDoc converted to 4 classes). The planning document of that version is [PlanejamentoAplicativo_CuidAR.docx](PlanejamentoAplicativo_CuidAR.docx) (in Portuguese).
+The first version used a YOLOv8n network (Unity Inference Engine) to detect leaf problems on real plants. Its code is still in `Assets/Scripts/Detection`, `Assets/Scripts/UI` and `CuidARController.cs`, but it is no longer used by the scene. The model is `Assets/Resources/Models/cuidar_yolov8n.onnx` (trained on PlantDoc converted to 4 classes).
