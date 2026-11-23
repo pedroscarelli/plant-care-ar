@@ -1,6 +1,6 @@
 # CuidAR – Care for a Virtual Plant in Augmented Reality
 
-Put the printed QR marker on a table, point the phone at it and a thirsty plant appears on top of it. The phone becomes your gardening tool: water the plant with a **hose** or a **watering can**, prune its dry leaves with **scissors** and tap away the **bugs** that come to eat it, all in AR.
+Point the phone at any table, tap, and a thirsty plant appears on it. The phone becomes your gardening tool: water the plant with a **hose** or a **watering can**, prune its dry leaves with **scissors** and tap away the **bugs** that come to eat it, all in AR.
 
 Project for the Virtual Reality course (Computer Science – FURB, 2026/2).
 
@@ -10,7 +10,7 @@ Project for the Virtual Reality course (Computer Science – FURB, 2026/2).
 
 ## The idea
 
-A printed **QR marker** goes on a table. Pointing the phone at it makes a **virtual potted plant** appear on the marker, at real scale, anchored to the table. The user takes care of it with three tools:
+The phone detects a real **table** and a green ring follows the center of the screen on it. A **tap** makes a **virtual potted plant** appear on the ring, at real scale, anchored to the table (the **Move** button puts it somewhere else). The user takes care of the plant with three tools:
 
 | Tool | How to use | What happens |
 |------|------------|--------------|
@@ -31,15 +31,15 @@ This follows the professor's suggestion after N3 to simplify the project (the fi
 ## How it works
 
 ```
-camera (AR Foundation) → image tracking of the QR marker (runtime reference library, full marker or QR only)
-                       → virtual plant anchored on the marker (stays put when the marker leaves the view)
+camera (AR Foundation) → plane detection (horizontal) → raycast from the screen center → green ring on the table
+tap                    → virtual plant anchored on that spot (plane detection then stops)
 phone pose (6DoF)      → ray from the screen center (+) onto the soil / table → where the water lands
 hose: finger held  /  can: phone roll  → water particles solved to land on the + → hydration ↑ → animations
 scissors: tap      → closest leaf projected on screen → snip animation → falling leaf → regrowth
 bugs: tap          → closest bug projected on screen → squash + poof
 ```
 
-- **Marker:** `Marker/cuidar_marker_A4.pdf` (print at 100%, the square is 15 cm). The leaf border gives ARKit/ARCore more features than a bare QR code, so detection is faster. The marker also works **cut around the QR code** (7.4 cm square): both images are registered in a runtime reference library (`Assets/Resources/Markers`).
+- **Placement:** ARKit/ARCore detect horizontal surfaces; the app casts the center of the screen onto them and places the plant facing the user. Tables with some texture and good light are found faster.
 - **Everything is procedural:** the plants, pot, tools and bugs are built in code from generated meshes, and all sounds (water, chime, pop, snip) are synthesized, so the project has no model or audio files.
 - **Plant state:** hydration from 0 to 1 (starts at 10%; the cactus fills 2× faster, the sunflower 0.7×; slowly dries again, faster with bugs on it).
 
@@ -48,8 +48,8 @@ bugs: tap          → closest bug projected on screen → squash + poof
 | ID | The user... |
 |----|-------------|
 | RF01 | opens the app, allows camera access and sees the real world through the camera (with **Open Settings** if access was denied) |
-| RF02 | points the camera at the printed QR marker (full or cut around the QR code) and the app recognizes it |
-| RF03 | sees a thirsty virtual plant anchored on the marker, at real scale |
+| RF02 | points the camera at a table, sees where the plant will go (green ring) and taps to place it; **Move** places it elsewhere |
+| RF03 | sees a thirsty virtual plant anchored on the table, at real scale |
 | RF04 | waters the plant with the **hose** (default tool): aims the **+** at the pot and holds the screen |
 | RF05 | waters the plant with the **watering can** by tilting the phone sideways |
 | RF06 | sees the plant hydrate (leaves, colors, soil, bar) and celebrate at 100% (flower, sparkles, chime, vibration), with feedback when watering wrong and **Dry again** to replay |
@@ -66,7 +66,7 @@ bugs: tap          → closest bug projected on screen → squash + poof
 
 ## Running the project
 
-Requirements: Unity **6000.6.9f1** with **Android Build Support** and/or **iOS Build Support**; Xcode for iPhone. Print `Marker/cuidar_marker_A4.pdf` at 100% scale.
+Requirements: Unity **6000.6.9f1** with **Android Build Support** and/or **iOS Build Support**; Xcode for iPhone.
 
 ### Android
 

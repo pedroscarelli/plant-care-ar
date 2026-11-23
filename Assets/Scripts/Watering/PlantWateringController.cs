@@ -10,27 +10,17 @@ namespace CuidAR.Watering
 {
     /// <summary>
     /// AR watering experience (ARScene):
-    ///  1. the camera looks for the printed QR marker on the table (image tracking) and, at the same time, for
-    ///     tables (plane detection): a green ring follows the center of the screen on the table;
-    ///  2. a thirsty virtual plant appears on top of the marker, or where the user taps to place it
-    ///     ("Move" places it somewhere else);
+    ///  1. the camera looks for tables (plane detection): a green ring follows the center of the screen on the table;
+    ///  2. the user taps and a thirsty virtual plant appears on the ring ("Move" places it somewhere else);
     ///  3. the user brings the phone close and tips it like a watering can;
     ///  4. water pours from the virtual can, and while it reaches the pot the plant hydrates:
     ///     leaves rise and turn green, the soil darkens and a flower blooms; at 100% it celebrates.
     ///
     /// Finds the AR components by itself, so it only needs to be added to any object in ARScene.
-    /// In the Editor (no marker): press P to place the plant in front of the camera and hold Space to tilt.
+    /// In the Editor (no AR): press P to place the plant in front of the camera and hold Space to tilt.
     /// </summary>
     public class PlantWateringController : MonoBehaviour
     {
-        [Header("Marker")]
-        [Tooltip("PNG of the printed marker (as .bytes). If empty, loads Resources/Markers/cuidar_marker.")]
-        [SerializeField] TextAsset markerImage;
-        [Tooltip("Printed width of the marker, in meters (the PDF prints it at 15 cm).")]
-        [SerializeField] float markerWidth = 0.15f;
-        [Tooltip("Width of the QR code square alone (white panel), in meters, for a marker cut around the QR code.")]
-        [SerializeField] float qrOnlyWidth = 0.074f;
-
         [Header("Plant")]
         [Tooltip("Scale of the virtual plant (1 = pot of 10 cm, plant about 25 cm tall).")]
         [SerializeField] float plantScale = 1f;
@@ -72,7 +62,8 @@ namespace CuidAR.Watering
         static readonly System.Collections.Generic.List<ARRaycastHit> s_Hits = new();
 
         WateringOverlay m_Overlay;
-        MarkerTracker m_Tracker;
+        bool m_HasPose;   // the plant has a spot on the table
+        Pose m_Pose;      // where the plant stands (facing the user)
         WateringAudio m_Audio;
         Transform m_Anchor;
         VirtualPlant m_Plant;
@@ -110,7 +101,7 @@ namespace CuidAR.Watering
             if (m_Camera != null)
                 EnsurePoseDriver(m_Camera.gameObject);
             m_PlaneManager = FindAnyObjectByType<ARPlaneManager>();
-            // Raycasts against detected tables, for placing the plant without the marker.
+            // Raycasts against detected tables, for placing the plant with a tap.
             if (m_Origin != null)
             {
                 m_Raycast = m_Origin.GetComponent<ARRaycastManager>();
@@ -127,7 +118,6 @@ namespace CuidAR.Watering
             m_Overlay.settingsPressed += CameraPermission.OpenAppSettings;
             m_Overlay.movePressed += StartMoving;
 
-            m_Tracker = gameObject.AddComponent<MarkerTracker>();
             m_Hydration = startHydration;
 
             if (m_Camera != null)
@@ -181,32 +171,14 @@ namespace CuidAR.Watering
                 yield break;
             }
 
-            // Tables (horizontal planes) are detected so the plant can also be placed with a tap, without the marker.
+            // Tables (horizontal planes) are detected so the plant can be placed on one with a tap.
             SetPlaneDetection(true);
-
-            // The full printed marker, and the QR code square alone (for a marker cut around the QR code).
-            if (markerImage == null)
-                markerImage = Resources.Load<TextAsset>("Markers/cuidar_marker");
-            var images = new System.Collections.Generic.List<MarkerTracker.MarkerImage>
-            {
-                new() { texture = LoadImage(markerImage), name = "cuidar_marker", width = markerWidth },
-                new() { texture = LoadImage(Resources.Load<TextAsset>("Markers/cuidar_qr")), name = "cuidar_qr", width = qrOnlyWidth },
-            };
-            if (images[0].texture == null && images[1].texture == null)
-            {
-                m_Overlay.SetStatus("Marker image not found", false);
-                yield break;
-            }
-
             m_Ready = true;
-            yield return m_Tracker.Setup(m_Origin, images);
-            if (m_Tracker.state != MarkerTracker.State.Searching && Application.isEditor)
-                m_EditorMode = true; // e.g. XR Simulation without runtime image libraries
         }
 
         /// <summary>
         /// Makes the AR camera follow the phone's position and rotation (6DoF). Without it the virtual camera
-        /// stays still and nothing can stay anchored to the marker. Added in code so the scene can't lose it.
+        /// stays still and nothing can stay anchored to the table. Added in code so the scene can't lose it.
         /// See <see cref="ARCameraPose"/> for the iOS 27 orientation safety check.
         /// </summary>
         static void EnsurePoseDriver(GameObject cameraObject)
@@ -218,14 +190,6 @@ namespace CuidAR.Watering
                 cameraObject.AddComponent<ARCameraPose>();
         }
 
-        static Texture2D LoadImage(TextAsset png)
-        {
-            if (png == null)
-                return null;
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            return texture.LoadImage(png.bytes, false) ? texture : null; // stays readable
-        }
-
         void Update()
         {
             if (!m_Ready)
@@ -233,10 +197,10 @@ namespace CuidAR.Watering
 
             HandleEditorInput();
 
-            if (!m_Tracker.hasPose || m_Moving)
+            if (!m_HasPose || m_Moving)
             {
                 bool placed = UpdatePlacement();
-                if (!m_Tracker.hasPose)
+                if (!m_HasPose)
                 {
                     ShowSearching();
                     m_Overlay.SetSpecies(false, 0);
@@ -246,7 +210,7 @@ namespace CuidAR.Watering
                 if (m_Moving && !placed)
                 {
                     // Plant already on the table: it stays put until the tap on its new spot.
-                    FollowMarker();
+                    FollowPose();
                     m_Can.triggerHeld = false;
                     m_Overlay.SetReticle(false, false);
                     m_Overlay.SetStatus(m_RingVisible ? "Tap to move the plant here" : "Looking for a table...", m_RingVisible);
@@ -257,15 +221,13 @@ namespace CuidAR.Watering
             else
             {
                 m_PlacementRing.gameObject.SetActive(false);
-                if (m_PlaneManager != null && m_PlaneManager.enabled)
-                    SetPlaneDetection(false); // placed by the QR marker: hide the detected tables
             }
 
             if (m_Plant == null)
                 SpawnPlant();
             m_Overlay.SetMoveVisible(!m_EditorMode && !m_Moving);
 
-            FollowMarker();
+            FollowPose();
             HandlePointer();
             UpdateWatering();
             UpdatePruning();
@@ -273,15 +235,6 @@ namespace CuidAR.Watering
 
         void ShowSearching()
         {
-            switch (m_Tracker.state)
-            {
-                case MarkerTracker.State.Unsupported:
-                    m_Overlay.SetStatus("This device does not support AR", false);
-                    m_Overlay.SetHint(null);
-                    return;
-                // Failed image tracking (marker rejected): the plant can still be placed on a table with a tap.
-            }
-
             if (!m_EditorMode && ARSession.state < ARSessionState.SessionTracking)
             {
                 m_Overlay.SetStatus(ARSession.state == ARSessionState.Installing ? "Installing AR services..." : "Starting camera...", false);
@@ -291,22 +244,22 @@ namespace CuidAR.Watering
 
             if (m_EditorMode)
             {
-                m_Overlay.SetStatus("Point the camera at the QR code", false);
+                m_Overlay.SetStatus("Point the camera at a table", false);
                 m_Overlay.SetHint("Editor: press P to place the plant");
             }
             else if (m_RingVisible)
             {
                 m_Overlay.SetStatus("Tap to place the plant here", true);
-                m_Overlay.SetHint("Aim the green ring at a table (or point at the QR code)");
+                m_Overlay.SetHint("Aim the green ring at a table");
             }
             else
             {
                 m_Overlay.SetStatus("Looking for a table...", false);
-                m_Overlay.SetHint("Move the phone slowly over a table, or point at the QR code");
+                m_Overlay.SetHint("Move the phone slowly over a table");
             }
         }
 
-        // ---------- placing the plant without the marker ----------
+        // ---------- placing the plant on a table ----------
 
         void SetPlaneDetection(bool on)
         {
@@ -350,7 +303,9 @@ namespace CuidAR.Watering
             // The plant faces the user.
             var toCamera = Vector3.ProjectOnPlane(m_Camera.transform.position - m_RingPose.position, Vector3.up);
             var rotation = toCamera.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(toCamera.normalized, Vector3.up) : Quaternion.identity;
-            m_Tracker.PlaceManually(new Pose(m_RingPose.position, rotation));
+            m_Pose = new Pose(m_RingPose.position, rotation);
+            m_HasPose = true;
+            Debug.Log($"[CuidAR] Plant placed at {m_Pose.position}");
             m_Moving = false;
             m_PressConsumed = true; // this tap must not also spray the hose
             m_PlacementRing.gameObject.SetActive(false);
@@ -535,8 +490,8 @@ namespace CuidAR.Watering
 
         Pose TargetPose()
         {
-            // Keep the plant upright (gravity), using only the marker's heading.
-            var pose = m_Tracker.pose;
+            // Keep the plant upright (gravity), using only the heading.
+            var pose = m_Pose;
             var forward = Vector3.ProjectOnPlane(pose.rotation * Vector3.forward, Vector3.up);
             if (forward.sqrMagnitude < 1e-4f)
                 forward = Vector3.ProjectOnPlane(pose.rotation * Vector3.up, Vector3.up);
@@ -549,9 +504,9 @@ namespace CuidAR.Watering
             m_Anchor.SetPositionAndRotation(target.position, target.rotation);
         }
 
-        void FollowMarker()
+        void FollowPose()
         {
-            // Smooth out the small jitter of image tracking.
+            // Glide to the spot (e.g. after "Move").
             var target = TargetPose();
             float k = 1f - Mathf.Exp(-12f * Time.deltaTime);
             m_Anchor.SetPositionAndRotation(
@@ -685,14 +640,15 @@ namespace CuidAR.Watering
 
             if (Keyboard.current.pKey.wasPressedThisFrame)
             {
-                // Place the "marker" on an imaginary table in front of and below the camera.
+                // Place the plant on an imaginary table in front of and below the camera.
                 m_EditorMode = true;
                 var cam = m_Camera.transform;
                 var forward = Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized;
                 if (forward.sqrMagnitude < 1e-4f)
                     forward = Vector3.forward;
-                m_Tracker.ForcePose(new Pose(cam.position + forward * 0.35f + Vector3.down * 0.3f,
-                    Quaternion.LookRotation(forward, Vector3.up)));
+                m_Pose = new Pose(cam.position + forward * 0.35f + Vector3.down * 0.3f,
+                    Quaternion.LookRotation(-forward, Vector3.up));
+                m_HasPose = true;
                 if (m_Anchor != null)
                     SnapAnchor();
             }

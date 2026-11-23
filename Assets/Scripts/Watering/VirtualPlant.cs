@@ -6,7 +6,7 @@ namespace CuidAR.Watering
     public enum PlantSpecies { Daisy, Cactus, Sunflower }
 
     /// <summary>
-    /// The virtual potted plant that appears on the QR marker, built from primitives. Three species:
+    /// The virtual potted plant the user places on a real table, built from primitives. Three species:
     /// - Daisy: leafy stem, pink flower blooms when hydrated (normal water need);
     /// - Cactus: plump column with two arms, wrinkles/shrinks and droops its arms when dry, blooms on top
     ///   (needs little water: hydrates fast);
@@ -18,7 +18,7 @@ namespace CuidAR.Watering
     /// </summary>
     public class VirtualPlant : MonoBehaviour
     {
-        // Sizes in meters, for a 15 cm marker.
+        // Sizes in meters (real scale: a pot about 10 cm wide).
         public const float PotRadius = 0.05f;
         public const float SoilHeight = 0.085f; // top of the soil
 
@@ -451,7 +451,7 @@ namespace CuidAR.Watering
             float dt = Time.deltaTime;
             float time = Time.time;
 
-            // Pop-in when the marker is first found (or the species changes).
+            // Pop-in when the plant is placed (or the species changes).
             m_Appear = Mathf.MoveTowards(m_Appear, 1f, dt * 1.8f);
             float appear = 1f + 2.7f * Mathf.Pow(m_Appear - 1f, 3f) + 1.7f * Mathf.Pow(m_Appear - 1f, 2f); // ease-out-back
             transform.localScale = Vector3.one * Mathf.Max(0f, appear);

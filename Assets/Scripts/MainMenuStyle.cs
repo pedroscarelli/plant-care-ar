@@ -84,7 +84,7 @@ public class MainMenuStyle : MonoBehaviour
         }
 
         // Footer tip.
-        var footer = Text("Footer", background, "Lay the printed QR marker on a table and point the camera at it", 32,
+        var footer = Text("Footer", background, "Point the camera at a table and tap to place your plant", 32,
             FontStyles.Normal, k_DarkGreen);
         footer.textWrappingMode = TextWrappingModes.Normal;
         Place(footer, new Vector2(0.5f, 0f), new Vector2(0f, 150f), new Vector2(860f, 100f));

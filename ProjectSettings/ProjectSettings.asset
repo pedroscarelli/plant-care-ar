@@ -536,7 +536,7 @@ PlayerSettings:
   enableInternalProfiler: 0
   logObjCUncaughtExceptions: 1
   enableCrashReportAPI: 0
-  cameraUsageDescription: CuidAR uses the camera to find the plant marker and show the virtual plant in AR.
+  cameraUsageDescription: CuidAR uses the camera to detect the table and show the virtual plant in AR.
   locationUsageDescription: 
   microphoneUsageDescription: 
   bluetoothUsageDescription: 

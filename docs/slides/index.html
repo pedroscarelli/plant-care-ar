@@ -52,11 +52,7 @@
   </div>
   <svg width="520" height="560" viewBox="0 0 520 560" aria-hidden="true">
     <ellipse cx="260" cy="520" rx="170" ry="22" fill="#000" opacity=".25"/>
-    <rect x="120" y="470" width="280" height="40" rx="6" fill="#e9e3d6"/>
-    <g transform="translate(205 478)" fill="#1f3328">
-      <rect width="110" height="26" fill="#fff"/><rect x="6" y="4" width="18" height="18"/><rect x="86" y="4" width="18" height="18"/>
-      <rect x="32" y="6" width="8" height="8"/><rect x="48" y="12" width="10" height="8"/><rect x="66" y="4" width="8" height="12"/>
-    </g>
+    <ellipse cx="260" cy="478" rx="120" ry="18" fill="none" stroke="#6fdc8c" stroke-width="5"/>
     <path d="M175 330 L345 330 L325 468 L195 468 Z" fill="#d9703f"/>
     <rect x="160" y="312" width="200" height="30" rx="6" fill="#bb5530"/>
     <ellipse cx="260" cy="315" rx="88" ry="10" fill="#4a2e1c"/>
@@ -79,19 +75,19 @@
 <!-- 2 · A ideia -->
 <section class="slide dark" style="display:flex; flex-direction:column; justify-content:center;">
   <div class="label">A ideia</div>
-  <div class="lead">Um QR code na mesa vira uma planta virtual. O celular vira a mangueira, o regador e a tesoura para cuidar dela.</div>
-  <p style="margin-top:34px; max-width:1150px; font-size:27px">A planta aparece em tamanho real sobre o marcador e reage ao cuidado: bebe a água, fica verde, floresce, perde folhas secas e é atacada por insetos. Tudo preso ao mundo real, em Realidade Aumentada.</p>
+  <div class="lead">Toque numa mesa de verdade e uma planta virtual aparece nela. O celular vira a mangueira, o regador e a tesoura para cuidar dela.</div>
+  <p style="margin-top:34px; max-width:1150px; font-size:27px">A planta aparece em tamanho real sobre a mesa e reage ao cuidado: bebe a água, fica verde, floresce, perde folhas secas e é atacada por insetos. Tudo preso ao mundo real, em Realidade Aumentada.</p>
   <p style="margin-top:24px; max-width:1150px; font-size:21px; color:#9fb1a6">Simplificação sugerida pelo professor após a N3: a versão anterior diagnosticava folhas reais com uma rede neural.</p>
 </section>
 
 <!-- 3 · Como funciona -->
 <section class="slide">
   <div class="label">Como funciona</div>
-  <h2>Do QR code à planta reagindo, em cinco etapas</h2>
+  <h2>Da mesa à planta reagindo, em cinco etapas</h2>
   <div class="cards" style="grid-template-columns:repeat(5,1fr)">
     <div class="card"><div class="num">1</div><h3>Câmera</h3><p>AR Foundation (ARKit ou ARCore) mostra o mundo e rastreia o celular em 6DoF.</p></div>
-    <div class="card"><div class="num">2</div><h3>Marcador</h3><p>Image tracking reconhece o QR code impresso (inteiro ou recortado).</p></div>
-    <div class="card"><div class="num">3</div><h3>Planta ancorada</h3><p>A planta nasce sobre o marcador e fica na mesa mesmo se ele sair da tela.</p></div>
+    <div class="card"><div class="num">2</div><h3>Mesa</h3><p>Detecção de planos encontra a mesa; um anel verde mostra onde a planta vai ficar.</p></div>
+    <div class="card"><div class="num">3</div><h3>Planta ancorada</h3><p>Um toque coloca a planta no anel, presa à mesa. O botão Move troca o lugar.</p></div>
     <div class="card"><div class="num">4</div><h3>Ferramentas</h3><p>A mira <b>+</b> no centro da tela é projetada na mesa: é ali que a água cai.</p></div>
     <div class="card"><div class="num">5</div><h3>Reação</h3><p>Hidratação, cores, flor, partículas, som e vibração mostram o resultado.</p></div>
   </div>
@@ -144,8 +140,8 @@
   <table>
     <tr><th>ID</th><th>O usuário…</th><th>Status</th></tr>
     <tr><td>RF01</td><td>abre o app, libera a câmera e vê o mundo real (com atalho para os Ajustes se negou)</td><td>✅ Concluído</td></tr>
-    <tr><td>RF02</td><td>aponta para o QR code impresso (inteiro ou recortado) e o app o reconhece</td><td>✅ Concluído</td></tr>
-    <tr><td>RF03</td><td>vê uma planta virtual com sede ancorada sobre o marcador, em tamanho real</td><td>✅ Concluído</td></tr>
+    <tr><td>RF02</td><td>aponta para uma mesa, vê o anel verde e toca para colocar a planta (Move muda o lugar)</td><td>✅ Concluído</td></tr>
+    <tr><td>RF03</td><td>vê uma planta virtual com sede ancorada sobre a mesa, em tamanho real</td><td>✅ Concluído</td></tr>
     <tr><td>RF04</td><td>rega com a mangueira (padrão): mira o + no vaso e segura a tela</td><td>✅ Concluído</td></tr>
     <tr><td>RF05</td><td>rega com o regador inclinando o celular de lado</td><td>✅ Concluído</td></tr>
     <tr><td>RF06</td><td>vê a planta se hidratar e comemorar a 100% (flor, brilhos, som, vibração) e recomeça com “Dry again”</td><td>✅ Concluído</td></tr>
@@ -179,9 +175,8 @@
     <!-- table -->
     <path d="M220 470 L1180 470 L1260 420 L300 420 Z" fill="#e8dcc6" stroke="#b9a988"/>
     <rect x="235" y="470" width="14" height="110" fill="#8a7a5c"/><rect x="1150" y="470" width="14" height="110" fill="#8a7a5c"/>
-    <!-- marker -->
-    <path d="M640 452 L800 452 L830 432 L670 432 Z" fill="#fff" stroke="#1f3328" stroke-width="2"/>
-    <g fill="#1f3328"><rect x="675" y="436" width="14" height="10"/><rect x="785" y="436" width="14" height="10"/><rect x="705" y="440" width="40" height="5"/></g>
+    <!-- placement ring -->
+    <ellipse cx="740" cy="442" rx="70" ry="12" fill="none" stroke="#2f8a4e" stroke-width="4"/>
     <!-- virtual plant (dashed) -->
     <g stroke="#2f8a4e" stroke-width="3" stroke-dasharray="9 7" fill="none">
       <path d="M690 440 L700 350 L780 350 L790 440 Z"/>
@@ -190,7 +185,7 @@
     </g>
     <text x="830" y="250" fill="#2f8a4e" font-weight="700">planta virtual</text>
     <text x="830" y="276" fill="#5b6660" font-size="17">(só aparece na tela)</text>
-    <text x="840" y="470" fill="#1f3328" font-weight="700">QR code impresso (15 cm)</text>
+    <text x="840" y="470" fill="#1f3328" font-weight="700">mesa detectada + anel verde (toque para colocar)</text>
     <!-- phone -->
     <g transform="translate(250 145) rotate(-12)">
       <rect width="150" height="290" rx="24" fill="#1f3328"/><rect x="10" y="14" width="130" height="262" rx="14" fill="#d9eadf"/>
@@ -204,7 +199,7 @@
     <path d="M400 230 L735 440" stroke="#2d8ce0" stroke-width="2.5" stroke-dasharray="6 6"/>
     <text x="470" y="250" fill="#2d8ce0" font-weight="700" transform="rotate(32 470 250)">mira “+” → onde a água cai</text>
     <g fill="#4a9ff0"><circle cx="560" cy="330" r="5"/><circle cx="610" cy="360" r="5"/><circle cx="655" cy="388" r="5"/><circle cx="700" cy="414" r="5"/></g>
-    <text x="700" y="560" fill="#5b6660" font-size="18" text-anchor="middle">RF02 reconhece o marcador · RF03 ancora a planta · RF04/RF05 a água segue a mira</text>
+    <text x="700" y="560" fill="#5b6660" font-size="18" text-anchor="middle">RF02 detecta a mesa e posiciona com um toque · RF03 ancora a planta · RF04/RF05 a água segue a mira</text>
   </svg>
 </section>
 
@@ -237,7 +232,7 @@
   <h2>Como construímos</h2>
   <div class="cards" style="grid-template-columns:repeat(4,1fr)">
     <div class="card"><h3>Unity 6 + AR Foundation</h3><p>Unity 6000.6.9f1 (URP) e C#, com ARKit no iPhone e ARCore no Android.</p></div>
-    <div class="card"><h3>Image tracking</h3><p>Biblioteca de imagens criada em tempo de execução: QR code inteiro (15 cm) ou recortado (7,4 cm).</p></div>
+    <div class="card"><h3>Detecção de planos</h3><p>ARPlaneManager + ARRaycastManager: o centro da tela é projetado na mesa e um toque posiciona a planta.</p></div>
     <div class="card"><h3>Conteúdo procedural</h3><p>Malhas, materiais URP, Particle System e áudio sintetizado. Nenhum asset externo.</p></div>
     <div class="card"><h3>Organização</h3><p>GitHub com Kanban no GitHub Projects (uma issue por requisito) e build por linha de comando.</p></div>
   </div>
