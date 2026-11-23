@@ -1,6 +1,6 @@
-# CuidAR – Care for a Virtual Plant in Augmented Reality
+# Care for a Virtual Plant in Augmented Reality
 
-Find a flat table, point the phone at it, choose the place you want your plant to grow, and a thirsty plant appears on top of it. The phone becomes your gardening tool: water the plant with a **hose** or a **watering can**, prune its dry leaves with **scissors** and tap away the **bugs** that come to eat it, all in AR.
+Find a flat table, point the camera of your phone at it, choose the place you want your plant to grow, and a thirsty plant appears on top of it. The phone becomes your gardening tool: water the plant with a **hose** or a **watering can**, prune its dry leaves with **scissors** and tap away the **bugs** that come to eat it, all in AR.
 
 Project for the Virtual Reality course (Computer Science – FURB, 2026/2).
 
